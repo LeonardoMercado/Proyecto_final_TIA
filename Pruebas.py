@@ -1,30 +1,27 @@
 import cv2
 import numpy as np
 
-video = cv2.VideoCapture(0)
-
-i = 0
-
+cap = cv2.VideoCapture(0)
+_, prev = cap.read()
+prevG = cv2.cvtColor(prev, cv2.COLOR_RGB2GRAY)
+kernel = np.ones((5, 5), np.uint8)
 while True:
+    _, next = cap.read()
+    nextG = cv2.cvtColor(next, cv2.COLOR_RGB2GRAY)
+    flow = np.array(
+        abs(np.array(nextG, np.float32) - np.array(prevG, np.float32)), np.uint8
+    )
+    cv2.imshow("Diferencia", flow)
+    rang = cv2.inRange(flow, 20, 255)
+    # cv2.imshow("rango", rang)
+    opening = cv2.morphologyEx(rang, cv2.MORPH_OPEN, kernel)
+    closing = cv2.morphologyEx(opening, cv2.MORPH_CLOSE, kernel)
+    cv2.imshow("pre-Filtrado", closing)
 
-    ret, frame = video.read()
-    if ret == False:
-        break
-
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    if i == 20:
-        bgGray = gray
-    elif i > 20:
-        dif = cv2.absdiff(gray, bgGray)
-        cv2.imshow("Resta", dif)
-        _, th = cv2.threshold(dif, 40, 255, cv2.THRESH_BINARY)
-        cnts, _ = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        # cv2.drawContours(frame, cnts, -1, (255, 0, 0), 5)
-        # cv2.imshow("Resta", th)
-    # cv2.imshow("HolaMundo", gray)
-
-    i = i + 1
+    prev = next
+    cv2.imshow("Siguiente", next)
 
     if cv2.waitKey(30) & 0xFF == ord("q"):
         break
-video.release()
+cap.release()
+cv2.destroyAllWindows()
